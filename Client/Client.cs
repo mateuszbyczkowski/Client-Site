@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -10,8 +9,24 @@ using System.Threading.Tasks;
 
 namespace Client
 {
+    class Format
+    {
+        public string Name { get; set; }
+        public string Information { get; set; }
+        public Format()
+        {
+            Name = string.Empty;
+            Information = string.Empty;
+        }
+        public Format(string name, string information)
+        {
+            Name = name;
+            Information = information;
+        }
+    }
     class Client
     {
+     
         public string Serwer { get; private set; }
         public int Port { get; private set; }
         public TcpClient Tcp { get; private set; }
@@ -28,12 +43,12 @@ namespace Client
                 if (Tcp.Connected)
                 {
                     SendCommunique(IP);
-                    Console.WriteLine("Polaczono z centrala");
+                    Console.WriteLine("Polaczono z serwerem");
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine("Nie uzyskano polaczenia z centrala");
+                    Console.WriteLine("Nie uzyskano polaczenia z serwerem");
                     return false;
                 }
             }
@@ -55,17 +70,16 @@ namespace Client
         public string GetCommunique()
         {
             BinaryReader reader = new BinaryReader(Tcp.GetStream());
-            byte message = reader.ReadByte();
-            string data = Convert.ToString(message, 2);
-            return data.PadLeft(8, '0');
+            string message = reader.ReadString();
+            string data = Convert.ToString(message);
+            return data;
         }
         public void SendCommunique(string communique)
         {
             try
             {
                 BinaryWriter writer = new BinaryWriter(Tcp.GetStream());
-                // Byte[] data = Encoding.ASCII.GetBytes(communique);
-                //System.Console.WriteLine("SendCommunique " + communique);
+
                 writer.Write(Convert.ToString(communique));
             }
             catch (ArgumentNullException e)
@@ -80,18 +94,6 @@ namespace Client
             {
                 Console.WriteLine("Exception: {0}", e);
             }
-        }
-
-        public string GetIP()
-        {
-            string strHostName = "";
-            strHostName = System.Net.Dns.GetHostName();
-
-            IPHostEntry ipEntry = System.Net.Dns.GetHostEntry(strHostName);
-
-            IPAddress[] addr = ipEntry.AddressList;
-
-            return addr[addr.Length - 1].ToString();
         }
     }
 }

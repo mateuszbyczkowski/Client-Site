@@ -1,58 +1,99 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net;
 
 namespace Client
 {
     class Program
     {
-        public static string output;
-        static private void tcpdump()
-        {
-            Process process = new Process();
-            process.StartInfo.FileName = "C:\\users\\mateu\\downloads\\WinDump.exe";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.Start();
-
-            // Synchronously read the standard output of the spawned process. 
-            output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-        }
-
         private static Client client;
         private static string MyIP;
+        private static List<Users> user = new List<Users>();
 
         static void Main(string[] args)
         {
-            string ServerIP = "127.0.0.1";
+            Console.WriteLine("Podaj IP serwera");
+            string ServerIP = Console.ReadLine();
             Console.WriteLine("Podaj IP urządzenia");
             string MyIP = Console.ReadLine();
             client = new Client(ServerIP, 1000);
-
-            Thread thr = new Thread(tcpdump);
-            thr.Start();
+            
+           
+         
 
             if (client.ConnectWithServer(MyIP))
             {
-                Console.WriteLine("Polaczono z serwerem");
-                while (true)
-                {
-                    //Console.WriteLine("Komunikat do wyslania: docelowo TCPDump");
-                    //string comumunique = Console.ReadLine();
-                    //client.SendCommunique(comumunique);
-                    client.SendCommunique(output);
-                }
+                Task t1 = new Task(new Action(SendCom));
+                Task t2 = new Task(new Action(GetIP));
+                Task t3 = new Task(new Action(TCPdump));
+
+                t1.Start();
+                t2.Start();
+                t3.Start();
+                Task.WaitAny(t1, t2,t3);
             }
-            Console.WriteLine("Konczenie pracy");
-            //Local IP
-            //Console.WriteLine(client.GetIP().ToString());
+            Console.WriteLine("Nie znaleziono serwera");
             Console.ReadLine();
         }
+
+        private static void SendCom()
+        {
+            while (true)
+            {
+                Console.WriteLine("Podaj komunikat");
+                string comumunique = Console.ReadLine();
+                
+                if(comumunique=="###") ///Wyświetlanie adresow IP użytkownikow
+                {
+                    foreach (Users us in user)
+                    {
+                        Console.WriteLine(us.IPaddr);
+                    }
+                }
+                else
+                {
+                    client.SendCommunique(comumunique);
+                }
+            }
+        }
+      
+
+        private static void GetIP()
+        {
+            while (true)
+            {
+                string addr = client.GetCommunique();
+                bool temp=true;
+                
+                foreach (Users us in user)
+                {
+                    if (us.IPaddr == addr)
+                    {
+                        temp = false;
+                        break;
+                    }    
+                }
+                
+                if(temp==true)
+                {
+                    user.Add(new Users(addr));
+                }
+            }
+        }
+
+        private static void TCPdump()
+        {
+            while (true)
+            {
+                //TUTAJ TRZECI WĄTEK Z TCPDUMPEM
+
+            }
+         }
+
+
+        
     }
 }
