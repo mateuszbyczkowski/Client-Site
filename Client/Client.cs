@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Client
 {
@@ -30,10 +33,13 @@ namespace Client
         public string Serwer { get; private set; }
         public int Port { get; private set; }
         public TcpClient Tcp { get; private set; }
+
+        public string Gate { get; private set; }
         public Client(string server, int port)
         {
             Serwer = server;
             Port = port;
+            Gate = GetDefaultGateway().ToString();
         }
         public bool ConnectWithServer(string IP)
         {
@@ -42,7 +48,7 @@ namespace Client
                 Tcp = new TcpClient(Serwer, Port);
                 if (Tcp.Connected)
                 {
-                    SendCommunique(IP);
+                    SendCommunique(IP+"#"+Gate);
                     Console.WriteLine("Polaczono z serwerem");
                     return true;
                 }
@@ -69,10 +75,17 @@ namespace Client
         
         public string GetCommunique()
         {
-            BinaryReader reader = new BinaryReader(Tcp.GetStream());
-            string message = reader.ReadString();
-            string data = Convert.ToString(message);
-            return data;
+            try
+            {
+                BinaryReader reader = new BinaryReader(Tcp.GetStream());
+                string message = reader.ReadString();
+                string data = Convert.ToString(message);
+                return data;
+            }
+            catch
+            {
+                return("");
+            }
         }
         public void SendCommunique(string communique)
         {
@@ -95,6 +108,17 @@ namespace Client
                 Console.WriteLine("Exception: {0}", e);
             }
         }
+
+        public static IPAddress GetDefaultGateway()
+        {
+            return NetworkInterface
+                .GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up)
+                .SelectMany(n => n.GetIPProperties()?.GatewayAddresses)
+                .Select(g => g?.Address)
+                .FirstOrDefault(a => a != null);
+        }
+
     }
 }
     
