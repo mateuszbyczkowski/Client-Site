@@ -21,10 +21,29 @@ namespace Client
         static void Main(string[] args)
         {
             //Podanie adresu serwera i klienta
-            Console.WriteLine("Podaj IP serwera");
-            string ServerIP = Console.ReadLine();
-            Console.WriteLine("Podaj IP urządzenia");
-            string MyIP = Console.ReadLine();
+            //Console.WriteLine("Podaj IP serwera");
+            //string ServerIP = Console.ReadLine();
+            //Console.WriteLine("Podaj IP urządzenia");
+            string ServerIP = "192.168.43.201";
+            Console.WriteLine("Adres serwera: " + ServerIP);
+
+            IPAddress[] ipv4Addresses = Array.FindAll(
+            Dns.GetHostEntry(string.Empty).AddressList,
+            a => a.AddressFamily == AddressFamily.InterNetwork);
+            string MyIP = "";
+
+            try
+            {
+                Console.WriteLine("Adres urządzenia: " + ipv4Addresses[0].ToString());
+                 MyIP = ipv4Addresses[0].ToString();
+                Console.WriteLine(MyIP);
+            }
+            catch
+            {
+                Console.WriteLine("Nie znaleziono adresu IP");
+                Console.ReadLine();
+                System.Diagnostics.Process.GetCurrentProcess().Kill();
+            }
 
             client = new Client(ServerIP, 1000);
             
@@ -33,7 +52,7 @@ namespace Client
 
             if (client.ConnectWithServer(MyIP))
             {
-                //Task t1 = new Task(new Action(SendCom)); //wysyłanie komunikatów (chat)
+                Task t1 = new Task(new Action(SendCom)); //wysyłanie komunikatów (chat)
                 Task t2 = new Task(new Action(GetIP)); //odbieranie adresów IP użytkowników połączonych do serwera
                 Task t3 = new Task(new Action(TCPdump)); //nieużywane
 
@@ -41,6 +60,10 @@ namespace Client
                 t2.Start();
                 t3.Start();
                 Task.WaitAny( t2,t3);
+            }
+            else
+            {
+                Console.WriteLine("Nie znaleziono serwera");
             }
             Console.WriteLine("Nie znaleziono serwera");
             //Console.ReadLine();
@@ -107,9 +130,9 @@ namespace Client
                 else if(addr=="EXIT")
                 {
                   
-                        Console.WriteLine("Serwer został wyłączony.");
-                        Console.WriteLine("Nastąpi zamknięcie aplikacji klienciej");
-                        Console.ReadLine();
+                       // Console.WriteLine("Serwer został wyłączony.");
+                       // Console.WriteLine("Nastąpi zamknięcie aplikacji klienciej");
+                       // Console.ReadLine();
                         System.Diagnostics.Process.GetCurrentProcess().Kill();
                   
                 }

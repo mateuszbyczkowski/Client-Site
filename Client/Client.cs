@@ -49,6 +49,8 @@ namespace Client
                 if (Tcp.Connected)
                 {
                     SendCommunique(IP+"#"+Gate);
+
+                    Console.WriteLine(IP + "#" + Gate);
                     Console.WriteLine("Polaczono z serwerem");
                     return true;
                 }
