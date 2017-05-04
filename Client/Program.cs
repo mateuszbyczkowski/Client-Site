@@ -54,7 +54,7 @@ namespace Client
             {
                 Task t1 = new Task(new Action(SendCom)); //wysyłanie komunikatów (chat)
                 Task t2 = new Task(new Action(GetIP)); //odbieranie adresów IP użytkowników połączonych do serwera
-                Task t3 = new Task(new Action(TCPdump)); //nieużywane
+                Task t3 = new Task(new Action(TCPdump)); //nieużywane, odniesienie trzeci watek z dumpem (task)
 
                 //t1.Start();
                 t2.Start();
@@ -78,17 +78,15 @@ namespace Client
                     Console.WriteLine("Podaj komunikat");
                     string communique = Console.ReadLine();
 
-                    if (communique == "###") ///Wyświetlanie adresow IP użytkownikow
+                    if (communique == "###") //Wyświetlanie adresow IP użytkownikow
                     {
                         foreach (Users us in user)
                         {
                             Console.WriteLine(us.IPaddr);
                         }
 
-
-
                     }
-                    else //Wysyłanie komunikatu podanego przez użytkownika
+                    else //Wysyłanie komunikatu podanego przez użytkownika pozniej dump
                     {
                         client.SendCommunique(communique);
                     }

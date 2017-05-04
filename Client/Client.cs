@@ -12,24 +12,8 @@ using System.Timers;
 
 namespace Client
 {
-    class Format
-    {
-        public string Name { get; set; }
-        public string Information { get; set; }
-        public Format()
-        {
-            Name = string.Empty;
-            Information = string.Empty;
-        }
-        public Format(string name, string information)
-        {
-            Name = name;
-            Information = information;
-        }
-    }
     class Client
     {
-     
         public string Serwer { get; private set; }
         public int Port { get; private set; }
         public TcpClient Tcp { get; private set; }
