@@ -36,7 +36,7 @@ namespace Client
             {
                 Console.WriteLine("Adres urządzenia: " + ipv4Addresses[0].ToString());
                  MyIP = ipv4Addresses[0].ToString();
-                Console.WriteLine(MyIP);
+                //Console.WriteLine(MyIP);
             }
             catch
             {

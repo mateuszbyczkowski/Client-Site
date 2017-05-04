@@ -34,7 +34,7 @@ namespace Client
                 {
                     SendCommunique(IP+"#"+Gate);
 
-                    Console.WriteLine(IP + "#" + Gate);
+                   // Console.WriteLine(IP + "#" + Gate);
                     Console.WriteLine("Polaczono z serwerem");
                     return true;
                 }
