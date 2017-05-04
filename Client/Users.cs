@@ -19,7 +19,6 @@ namespace Client
         {
             IPaddr = addr;
         }
-
         
     }
 }
