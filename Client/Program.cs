@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -15,8 +16,10 @@ namespace Client
     class Program
     {
         private static Client client;
-        private static string MyIP;
         private static List<Users> user = new List<Users>();
+        private static List<Packets> packets = new List<Packets>();
+        private static string MyIP = "";
+        private static List<string> UniqueIP = new List<string>();
 
         static void Main(string[] args)
         {
@@ -30,7 +33,7 @@ namespace Client
             IPAddress[] ipv4Addresses = Array.FindAll(
             Dns.GetHostEntry(string.Empty).AddressList,
             a => a.AddressFamily == AddressFamily.InterNetwork);
-            string MyIP = "";
+            
 
             try
             {
@@ -46,20 +49,25 @@ namespace Client
             }
 
             client = new Client(ServerIP, 1000);
-            
-
-
+            try
+            {
+               Process.Start("MJSniff.exe");
+            }
+            catch
+            {
+                Console.WriteLine("Nie znaleziono programu MJSniff");
+            }
 
             if (client.ConnectWithServer(MyIP))
             {
                 Task t1 = new Task(new Action(SendCom)); //wysyłanie komunikatów (chat)
                 Task t2 = new Task(new Action(GetIP)); //odbieranie adresów IP użytkowników połączonych do serwera
-                Task t3 = new Task(new Action(TCPdump)); //nieużywane, odniesienie trzeci watek z dumpem (task)
+               // Task t3 = new Task(new Action(TCPdump)); //nieużywane, odniesienie trzeci watek z dumpem (task)
 
                 //t1.Start();
                 t2.Start();
-                t3.Start();
-                Task.WaitAny( t2,t3);
+               // t3.Start();
+                Task.WaitAny( t2);
             }
             else
             {
@@ -120,25 +128,47 @@ namespace Client
                         {
 
                         }
-                        string comm= us.IPaddr + "#" + pinging.ToString();
+                        string comm = us.IPaddr + "#" + pinging.ToString();
                         client.SendCommunique(comm);    //Odesłanie do serwera informacji czy udało się pingować
                     }
                 }
-
-                else if(addr=="EXIT")
+                else if(addr == "DUMP")
                 {
-                  
-                       // Console.WriteLine("Serwer został wyłączony.");
-                       // Console.WriteLine("Nastąpi zamknięcie aplikacji klienciej");
-                       // Console.ReadLine();
-                        System.Diagnostics.Process.GetCurrentProcess().Kill();
-                  
+                    packets.Clear();
+                    string path = "date.txt";
+
+                    string[] readText = File.ReadAllLines(path);
+                    System.IO.File.WriteAllText("date.txt", string.Empty);
+                    foreach (string s in readText)
+                    {
+                        packets.Add(new Packets(s));
+                        //client.SendCommunique("*"+s);
+                    }
+                    foreach (Packets p in packets)
+                    {
+                        
+                        client.SendCommunique("*"+p.Line);
+                    }
+
+                    TCPdump();
+                }
+                else if (addr == "EXIT")
+                {
+
+                    //Process.Stop("MJSniff.exe");
+                    Process[] processes = Process.GetProcessesByName("MJSniff");
+                    foreach (var process in processes)
+                    {
+                        process.Kill();
+                    }
+                    System.Diagnostics.Process.GetCurrentProcess().Kill();
+
                 }
                 else if (addr == "")
                 {
                 }
-                else                                //Jeśli komunikat różny od ##### to odebrano adres IP
-                {                                   //Jeśli go jeszcze nie ma to zapisuje do listy user
+                else
+                {
                     bool temp = true;
                     foreach (Users us in user)
                     {
@@ -157,14 +187,36 @@ namespace Client
             }
         }
 
-        private static void TCPdump()
+        private static void TCPdump()                           //wysyła do serwera unikalne adresy z którymi się komunikował 
         {
-            while (true)
-            {
-                //TUTAJ TRZECI WĄTEK Z DUMPEM
 
+            Thread.Sleep(100);
+            
+            
+             foreach (Packets pack in packets)
+             {
+                 if ((UniqueIP.Contains(pack.DestIP) == false) && (pack.DestIP!="0.0.0.0") && (pack.DestIP != "255.255.255.255") && (pack.DestIP!=MyIP) && (pack.DestIP != client.Gate))                                    
+                 {
+                          UniqueIP.Add(pack.DestIP);
+                 }
+             }
+            foreach (Packets pack in packets)
+            {
+                if ((UniqueIP.Contains(pack.SourIP) == false) && (pack.SourIP != "0.0.0.0") && (pack.SourIP != "255.255.255.255") && (pack.SourIP != MyIP) && (pack.SourIP != client.Gate))
+                {
+                    UniqueIP.Add(pack.DestIP);
+                }
             }
-         }
+            //TUTAJ TRZECI WĄTEK Z DUMPEM
+
+            foreach (string ip in UniqueIP)
+            {
+                client.SendCommunique("^"+ip);
+            }
+
+            client.SendCommunique("@@@@@");
+        }
+
 
 
         
