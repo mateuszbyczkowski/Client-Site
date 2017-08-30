@@ -11,6 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
+
+
 namespace Client
 {
     class Program
@@ -19,7 +21,11 @@ namespace Client
         private static List<Users> user = new List<Users>();
         private static List<Packets> packets = new List<Packets>();
         private static string MyIP = "";
+        private static string MyMAC = "";
         private static List<string> UniqueIP = new List<string>();
+        private static string ServerIP = "192.168.0.12";
+        private static int cmdID;    
+        
 
         static void Main(string[] args)
         {
@@ -27,13 +33,14 @@ namespace Client
             //Console.WriteLine("Podaj IP serwera");
             //string ServerIP = Console.ReadLine();
             //Console.WriteLine("Podaj IP urządzenia");
-            string ServerIP = "192.168.43.201";
+            KillWindump();
             Console.WriteLine("Adres serwera: " + ServerIP);
 
             IPAddress[] ipv4Addresses = Array.FindAll(
             Dns.GetHostEntry(string.Empty).AddressList,
             a => a.AddressFamily == AddressFamily.InterNetwork);
-            
+
+            GetMAC();
 
             try
             {
@@ -49,23 +56,17 @@ namespace Client
             }
 
             client = new Client(ServerIP, 1000);
-            try
-            {
-               Process.Start("MJSniff.exe");
-            }
-            catch
-            {
-                Console.WriteLine("Nie znaleziono programu MJSniff");
-            }
 
-            if (client.ConnectWithServer(MyIP))
+            if (client.ConnectWithServer(MyIP+"#"+MyMAC))
             {
                 Task t1 = new Task(new Action(SendCom)); //wysyłanie komunikatów (chat)
                 Task t2 = new Task(new Action(GetIP)); //odbieranie adresów IP użytkowników połączonych do serwera
+                Task t3 = new Task(new Action(WinDump));
                // Task t3 = new Task(new Action(TCPdump)); //nieużywane, odniesienie trzeci watek z dumpem (task)
 
                 //t1.Start();
                 t2.Start();
+                t3.Start();
                // t3.Start();
                 Task.WaitAny( t2);
             }
@@ -74,7 +75,7 @@ namespace Client
                 Console.WriteLine("Nie znaleziono serwera");
             }
             Console.WriteLine("Nie znaleziono serwera");
-            //Console.ReadLine();
+            Console.ReadLine();
         }
 
         private static void SendCom()
@@ -111,6 +112,8 @@ namespace Client
         {
             while (true)
             {
+
+                
                 string addr = client.GetCommunique();
                 if (addr == "#####")                    //Jeśli komunikat to ##### to pinguj do użytkowników o zapisanych adresach
                 {
@@ -135,10 +138,12 @@ namespace Client
                 else if(addr == "DUMP")
                 {
                     packets.Clear();
-                    string path = "date.txt";
+                    KillWindump();
+                    Thread.Sleep(100);
+                    string path = "packets.txt";
 
                     string[] readText = File.ReadAllLines(path);
-                    System.IO.File.WriteAllText("date.txt", string.Empty);
+                    System.IO.File.WriteAllText("packets.txt", string.Empty);
                     foreach (string s in readText)
                     {
                         packets.Add(new Packets(s));
@@ -156,11 +161,11 @@ namespace Client
                 {
 
                     //Process.Stop("MJSniff.exe");
-                    Process[] processes = Process.GetProcessesByName("MJSniff");
-                    foreach (var process in processes)
-                    {
-                        process.Kill();
-                    }
+                    //Process[] processes = Process.GetProcessesByName("MJSniff");
+                    //foreach (var process in processes)
+                    //{
+                    //    process.Kill();
+                    //}
                     System.Diagnostics.Process.GetCurrentProcess().Kill();
 
                 }
@@ -195,14 +200,14 @@ namespace Client
             
              foreach (Packets pack in packets)
              {
-                 if ((UniqueIP.Contains(pack.DestIP) == false) && (pack.DestIP!="0.0.0.0") && (pack.DestIP != "255.255.255.255") && (pack.DestIP!=MyIP) && (pack.DestIP != client.Gate))                                    
+                 if ((UniqueIP.Contains(pack.DestIP) == false) && (pack.DestIP !=ServerIP ) && (pack.DestIP!="0.0.0.0") && (pack.DestIP != "255.255.255.255") && (pack.DestIP!=MyIP) && (pack.DestIP != client.Gate))                                    
                  {
                           UniqueIP.Add(pack.DestIP);
                  }
              }
             foreach (Packets pack in packets)
             {
-                if ((UniqueIP.Contains(pack.SourIP) == false) && (pack.SourIP != "0.0.0.0") && (pack.SourIP != "255.255.255.255") && (pack.SourIP != MyIP) && (pack.SourIP != client.Gate))
+                if ((UniqueIP.Contains(pack.SourIP) == false) && (pack.SourIP != ServerIP) && (pack.SourIP != "0.0.0.0") && (pack.SourIP != "255.255.255.255") && (pack.SourIP != MyIP) && (pack.SourIP != client.Gate))
                 {
                     UniqueIP.Add(pack.DestIP);
                 }
@@ -218,7 +223,66 @@ namespace Client
         }
 
 
+        private static void WinDump()                           
+        {
 
-        
+            Thread.Sleep(100);
+            File.Delete("packets.txt");
+            try
+            {
+               
+              
+                Process cmd = new Process();
+                cmd.StartInfo.FileName = "cmd.exe";
+                cmd.StartInfo.RedirectStandardInput = true;
+                cmd.StartInfo.RedirectStandardOutput = true;
+                cmd.StartInfo.CreateNoWindow = true;
+                cmd.StartInfo.UseShellExecute = false;
+              
+                cmd.Start();
+                cmdID=cmd.Id;
+                cmd.StandardInput.WriteLine("windump -i 1 -en >>packets.txt"); 
+                cmd.StandardInput.Flush();        
+                cmd.StandardInput.Close();
+                cmd.WaitForExit();
+                
+                //Console.WriteLine(cmd.StandardOutput.ReadToEnd());
+                
+            }
+            catch
+            {
+                Console.WriteLine("Nie zainstalowano pcap lub nie znaleziono programu windump w pliku Debug");
+              
+            }
+        }
+
+        private static void KillWindump()
+        {
+            foreach (var process in Process.GetProcessesByName("WinDump"))
+            {
+                process.Kill();
+            }
+            Thread.Sleep(100);
+        }
+     
+        private static void GetMAC()
+        {
+            
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+
+                if (nic.OperationalStatus == OperationalStatus.Up && (!nic.Description.Contains("Virtual") && !nic.Description.Contains("Pseudo")))
+                {
+                    if (nic.GetPhysicalAddress().ToString() != "")
+                    {
+                        MyMAC = nic.GetPhysicalAddress().ToString();
+                    }
+                }
+            }
+            Console.WriteLine("Adres fizyczny: " + MyMAC);
+        }
+
+
+
     }
 }

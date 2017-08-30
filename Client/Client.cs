@@ -25,14 +25,14 @@ namespace Client
             Port = port;
             Gate = GetDefaultGateway().ToString();
         }
-        public bool ConnectWithServer(string IP)
+        public bool ConnectWithServer(string IPandMAC)
         {
             try
             {
                 Tcp = new TcpClient(Serwer, Port);
                 if (Tcp.Connected)
                 {
-                    SendCommunique(IP+"#"+Gate);
+                    SendCommunique(IPandMAC + "#"+Gate);
 
                    // Console.WriteLine(IP + "#" + Gate);
                     Console.WriteLine("Polaczono z serwerem");

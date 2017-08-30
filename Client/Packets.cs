@@ -9,9 +9,12 @@ namespace Client
     class Packets
     {
         public string Line { get; set; }
-        public int Nr { get; set; }
-        public string SourIP { get; set; }
-        public string DestIP { get; set; }
+        public int Nr { get; }
+        public string Time { get; }
+        public string SourIP { get;  }
+        public string DestIP { get;  }
+        public string SourMAC { get; }
+        public string DestMAC { get; }
         public string Protocol { get; set; }
         public string CheckSum { get; set; }
         public string Identification { get; set; }
@@ -20,60 +23,46 @@ namespace Client
         {
             Line = line;
 
-            string temp = "";
-            int fieldnumber = 1;
-            for(int i=0;i<line.Length;i++)
+            string phrase = line;
+            string[] words;
+
+            words = phrase.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries);
+            
+            try
             {
-               if(line[i]=='#')
+                Time = words[0];
+                SourMAC = words[1];
+                DestMAC = words[3];
+                if (words[9] == "arp")
                 {
-                    if(fieldnumber==1)
-                    {
-                        Nr = Convert.ToInt32(temp);
-                    }
-                    else if(fieldnumber == 2)
-                    {
-                        Protocol = temp;
-                    }
-                    else if(fieldnumber==3)
-                    {
-                        SourIP = temp;
-                    }
-                    else if (fieldnumber == 4)
-                    {
-                        CheckSum = temp;
-                    }
-                    else if (fieldnumber == 5)
-                    {
-                        Identification = temp;
-                    }
-
-
-                    //ostatnie pole jest zakończone dolarem i jest w ifie poniżej
-                    else
-                    { }
-                    fieldnumber++;
-                    temp = "";
+                    SourIP = words[11];
+                    DestIP = words[13];
                 }
-                else if(line[i] == '$')
+                else
                 {
-                    DestIP = temp;
-                    break;
-                }
-               else
-                {
-                    temp = temp + line[i];
+                    SourIP = words[9];
+                    DestIP = words[11];
                 }
 
 
-                //TODO Parsowanie linii
+                Line = SourIP + '#' + DestIP + '#' + SourMAC + '#' + DestMAC;
+
+
+                display_information();
+            }
+            catch
+            {
 
             }
-            display_information();
+
+
+
         }
 
         public void display_information()
         {
-            Console.WriteLine(Nr + " " + Protocol + "  " + SourIP + " " + DestIP + " " + CheckSum + " " + Identification + "\n");
+            Console.WriteLine(Line);
+            //Console.WriteLine( SourIP + " " + DestIP + " " + SourMAC + " " + DestMAC + "\n");
         }
     }
 }
