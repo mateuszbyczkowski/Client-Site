@@ -149,9 +149,10 @@ namespace Client
                         packets.Add(new Packets(s));
                         //client.SendCommunique("*"+s);
                     }
+                    
                     foreach (Packets p in packets)
                     {
-                        
+                        if( p.permision==true)
                         client.SendCommunique("*"+p.Line);
                     }
 
@@ -241,7 +242,7 @@ namespace Client
               
                 cmd.Start();
                 cmdID=cmd.Id;
-                cmd.StandardInput.WriteLine("windump -i 1 -en >>packets.txt"); 
+                cmd.StandardInput.WriteLine("windump -i 1 -env >>packets.txt"); 
                 cmd.StandardInput.Flush();        
                 cmd.StandardInput.Close();
                 cmd.WaitForExit();
@@ -267,19 +268,27 @@ namespace Client
      
         private static void GetMAC()
         {
-            
+            string[] tab1 = new string[10];
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
 
-                if (nic.OperationalStatus == OperationalStatus.Up && (!nic.Description.Contains("Virtual") && !nic.Description.Contains("Pseudo")))
-                {
-                    if (nic.GetPhysicalAddress().ToString() != "")
+                //if (nic.OperationalStatus == OperationalStatus.Up && (!nic.Description.Contains("Virtual") && !nic.Description.Contains("Pseudo")))
+                // {
+                if (nic.GetPhysicalAddress().ToString() != "")
                     {
-                        MyMAC = nic.GetPhysicalAddress().ToString();
+                    //Console.WriteLine(nic.GetPhysicalAddress().ToString());
+                        if(!tab1.Contains(nic.GetPhysicalAddress().ToString())&&(nic.GetPhysicalAddress().ToString()!="00000000000000E0"))
+                        {
+                        MyMAC = MyMAC + nic.GetPhysicalAddress().ToString()+"@";
+                        Console.WriteLine(nic.GetPhysicalAddress().ToString());
+                        }
+
+                      
+                       
                     }
-                }
+               // }
             }
-            Console.WriteLine("Adres fizyczny: " + MyMAC);
+            //Console.WriteLine("Adres fizyczny: " + MyMAC);
         }
 
 

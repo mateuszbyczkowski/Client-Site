@@ -15,7 +15,7 @@ namespace Client
         public string DestIP { get;  }
         public string SourMAC { get; }
         public string DestMAC { get; }
-        public string Protocol { get; set; }
+        public bool permision { get; }
         public string CheckSum { get; set; }
         public string Identification { get; set; }
 
@@ -23,6 +23,7 @@ namespace Client
         {
             Line = line;
 
+            permision = true ;
             string phrase = line;
             string[] words;
 
@@ -44,15 +45,57 @@ namespace Client
                     DestIP = words[11];
                 }
 
+                for (int i=0; i<words.Count(); i++)
+                {
+                    if(words[i]=="id")
+                    {
+                        CheckSum=words[i + 1];
+                    }
+                    if(words[i]== "length:")
+                    {
+                        string value = words[i + 2];
+                        Char delimiter = '.';
+                        String[] substrings = new String[2];
+                        substrings = value.Split(delimiter);
+                        try
+                        {
+                            SourIP = substrings[0] + "." + substrings[1] + "." + substrings[2] + "." + substrings[3];
+                        }
+                        catch
+                        {
 
-                Line = SourIP + '#' + DestIP + '#' + SourMAC + '#' + DestMAC;
+                        }
+
+                        value= words[i + 4];
+                        substrings = null;
+                        substrings = new String[2];
+                        substrings = value.Split(delimiter);
+                        try
+                        {
+                            DestIP = substrings[0] + "." + substrings[1] + "." + substrings[2] + "." + substrings[3];
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+
+                if (!SourMAC.Contains(':') || !DestMAC.Contains(':') || !SourIP.Contains('.') || !DestIP.Contains('.') || !CheckSum.Contains(',')||DestMAC=="ff:ff:ff:ff:ff:ff,")
+                {
+                    permision = false;
+                }
+                else
+                {
+                    Line = SourIP.Replace(",:", "") + '#' + DestIP.Replace(":", "") + '#' + SourMAC + '#' + DestMAC.Replace(",", "") + "#" + CheckSum;
 
 
-                display_information();
+                    display_information();
+                }
             }
             catch
             {
-
+                permision = false;
             }
 
 
