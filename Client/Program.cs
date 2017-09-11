@@ -24,29 +24,50 @@ namespace Client
         private static string MyMAC = "";
         private static List<string> UniqueIP = new List<string>();
         private static string ServerIP = "192.168.0.12";
-        private static int cmdID;    
+        private static int cmdID;
+        private static int Interface = 0;
+
         
 
         static void Main(string[] args)
         {
             //Podanie adresu serwera i klienta
-            //Console.WriteLine("Podaj IP serwera");
-            //string ServerIP = Console.ReadLine();
-            //Console.WriteLine("Podaj IP urządzenia");
+            Console.WriteLine("Podaj IP serwera");
+            string ServerIP = Console.ReadLine();
+            Console.WriteLine("Podaj numer interfejsu dla WinDump");
+            Interface = Convert.ToInt16(Console.ReadLine());
+
+
             KillWindump();
-            Console.WriteLine("Adres serwera: " + ServerIP);
+            //Console.WriteLine("Adres serwera: " + ServerIP);
 
             IPAddress[] ipv4Addresses = Array.FindAll(
             Dns.GetHostEntry(string.Empty).AddressList,
             a => a.AddressFamily == AddressFamily.InterNetwork);
-
-            GetMAC();
+            
+           
 
             try
             {
-                Console.WriteLine("Adres urządzenia: " + ipv4Addresses[0].ToString());
-                 MyIP = ipv4Addresses[0].ToString();
-                //Console.WriteLine(MyIP);
+                if (ipv4Addresses.Count() > 1)
+                {
+                    int i = 1;
+                    Console.WriteLine("Dostępne adresy IP:");
+                    foreach (IPAddress ip in ipv4Addresses)
+                    {
+                        Console.WriteLine(i + ": " + ip.ToString());
+                    }
+                    Console.WriteLine("Z którego adresu korzystać?");
+                    i = 0;
+                    i = Convert.ToInt16(Console.ReadLine());
+
+                    MyIP = ipv4Addresses[i-1].ToString();
+                    //Console.WriteLine(MyIP);
+                }
+                else
+                {
+                    MyIP = ipv4Addresses[0].ToString();
+                }
             }
             catch
             {
@@ -54,6 +75,11 @@ namespace Client
                 Console.ReadLine();
                 System.Diagnostics.Process.GetCurrentProcess().Kill();
             }
+            Console.Clear();
+            Console.WriteLine("Adres serwera: " + ServerIP);
+            Console.WriteLine("Adres urządzenia: "+ MyIP);
+            Console.WriteLine("Adres MAC urządzenia: ");
+            GetMAC();
 
             client = new Client(ServerIP, 1000);
 
@@ -242,7 +268,7 @@ namespace Client
               
                 cmd.Start();
                 cmdID=cmd.Id;
-                cmd.StandardInput.WriteLine("windump -i 1 -env >>packets.txt"); 
+                cmd.StandardInput.WriteLine("windump -i "+Interface+" -env >>packets.txt"); 
                 cmd.StandardInput.Flush();        
                 cmd.StandardInput.Close();
                 cmd.WaitForExit();
